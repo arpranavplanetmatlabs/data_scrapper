@@ -13,7 +13,7 @@ class Settings:
     # "google"  → uses googlesearch-python (no key needed, has rate limits)
     # "serpapi" → uses SerpAPI (needs SERPAPI_KEY, more robust)
     SEARCH_PROVIDER: str = os.getenv("SEARCH_PROVIDER", "serpapi")
-    SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", " ") # (### API KEY HERE ###)
+    SERPAPI_KEY: str = os.getenv("SERPAPI_KEY", "")
     SEARCH_RESULTS_LIMIT: int = int(os.getenv("SEARCH_RESULTS_LIMIT", "10"))
 
     # ── Scraper ──────────────────────────────────────────────────────────────

@@ -4,56 +4,109 @@
 
 @layer base {
   body {
-    @apply bg-background text-textMain min-h-screen font-sans antialiased overflow-hidden;
+    @apply bg-white text-black min-h-screen font-sans antialiased selection:bg-black selection:text-white leading-relaxed;
+    font-feature-settings: "cv02", "cv05", "cv11";
   }
 }
 
 @layer components {
-  .glass-panel {
-    @apply bg-glass-gradient backdrop-blur-md border border-[rgba(255,255,255,0.05)] shadow-glass rounded-2xl;
+  /* Ultra-Minimal Modern Panels */
+  .enterprise-panel {
+    @apply bg-neutral-50 border border-neutral-200 rounded-xl transition-all duration-300;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  .enterprise-panel:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
   }
 
-  .neumorph-btn {
-    @apply bg-panel text-textMain rounded-xl shadow-neumorph transition-all duration-300 active:shadow-neumorph-inset;
+  /* Sharp Elite Inputs */
+  .enterprise-input {
+    @apply bg-white border border-neutral-200 text-black rounded-lg px-4 py-2.5 outline-none transition-all duration-200 focus:border-black focus:ring-1 focus:ring-black placeholder-neutral-400 leading-tight text-sm font-medium;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
   
-  .neumorph-btn-accent {
-    @apply bg-accent text-background font-semibold rounded-xl transition-all duration-300 hover:bg-accentHover shadow-[0_0_15px_rgba(126,217,87,0.3)] hover:shadow-[0_0_25px_rgba(126,217,87,0.5)];
+  /* Elite Monochrome Button (Primary) */
+  .enterprise-btn-primary {
+    @apply bg-black text-white font-semibold rounded-lg transition-all duration-300 hover:scale-[1.01] active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none px-6 py-2.5;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  }
+  .enterprise-btn-primary:hover {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.15);
   }
 
-  .neumorph-input {
-    @apply bg-panel text-textMain rounded-xl shadow-neumorph-inset px-4 py-3 outline-none focus:ring-1 focus:ring-accent border border-transparent transition-all;
+  /* Elite Outline/Secondary Button */
+  .enterprise-btn-secondary {
+    @apply bg-white border border-neutral-200 text-black font-semibold rounded-lg transition-all duration-200 hover:bg-neutral-50 active:scale-95 px-5 py-2;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
   }
-  
+  .enterprise-btn-secondary:hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  }
+
+  /* Clean Information Tables */
   .table-container {
-    @apply w-full overflow-x-auto rounded-xl border border-borderDark;
+    @apply w-full overflow-hidden rounded-xl border border-neutral-200 bg-white;
+    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
   }
   
   .table-header {
-    @apply bg-panelLight text-left text-sm font-semibold text-textMuted uppercase tracking-wider px-6 py-4;
+    @apply bg-neutral-50 text-left text-[10px] font-bold text-neutral-500 uppercase tracking-[0.15em] px-6 py-4 border-b border-neutral-200;
   }
   
   .table-cell {
-    @apply px-6 py-4 whitespace-nowrap text-sm border-b border-borderDark/50;
+    @apply px-6 py-4 whitespace-nowrap text-sm border-b border-neutral-100 transition-colors duration-150 group-hover:bg-neutral-50;
   }
   
   .table-row {
-    @apply transition-colors hover:bg-[rgba(255,255,255,0.02)];
+    @apply transition-colors duration-300 bg-white;
+  }
+
+  /* Transition for pages (Custom animation to avoid plugin dependency) */
+  .page-transition {
+    @apply opacity-0;
+    animation: slideUpFade 0.6s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
   }
 }
 
-/* Custom Scrollbar */
+/* Elegant Scrollbar (Lenis handles the velocity) */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 4px;
+  height: 4px;
 }
 ::-webkit-scrollbar-track {
-  background: #0B0F14; 
+  background: transparent; 
 }
 ::-webkit-scrollbar-thumb {
-  background: #2D3748; 
-  border-radius: 4px;
+  @apply bg-neutral-200 rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #4A5568; 
+  @apply bg-neutral-400;
+}
+
+@keyframes slideUpFade {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.8s cubic-bezier(0.165, 0.84, 0.44, 1) forwards;
+}
+
+.animate-spin-slow {
+  animation: spin 3s linear infinite;
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Animations Logic: Focus States & Interactions */
+button:focus {
+  outline: none;
 }

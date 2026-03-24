@@ -11,6 +11,7 @@ from api.fetch import router as fetch_router
 from api.jobs import router as jobs_router
 from api.candidates import router as candidates_router
 from api.materials import router as materials_router
+from api.stats import router as stats_router
 from config import settings
 
 
@@ -47,6 +48,7 @@ app.include_router(fetch_router)
 app.include_router(jobs_router)
 app.include_router(candidates_router)
 app.include_router(materials_router)
+app.include_router(stats_router)
 
 
 @app.get("/health", tags=["Health"])

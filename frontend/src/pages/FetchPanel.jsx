@@ -1,21 +1,38 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchDatasheets, getJobStatus } from '../services/api';
+import { fetchDatasheets, getJobStatus, getStats } from '../services/api';
 
 const FetchPanel = () => {
-  const [company, setCompany] = useState('DuPont');
-  const [category, setCategory] = useState('Nylon');
+  const [companySelect, setCompanySelect] = useState('DuPont');
+  const [companyOther, setCompanyOther] = useState('');
+  
+  const [categorySelect, setCategorySelect] = useState('Nylon');
+  const [categoryOther, setCategoryOther] = useState('');
+  
   const [jobId, setJobId] = useState(null);
   const [status, setStatus] = useState(null);
+  const [stats, setStats] = useState({ google: 0, ddg: 0, serpapi: 0 });
   const navigate = useNavigate();
 
-  const companies = ['DuPont', 'Covestro', 'Arkema', 'BASF', 'Lanxess', 'Sabic', 'Evonik'];
-  const categories = ['Nylon', 'Polycarbonate', 'TPU', 'Acetal', 'PET', 'PBT', 'ABS'];
+  const companies = ['DuPont', 'Covestro', 'Arkema', 'BASF', 'Lanxess', 'Sabic', 'Evonik', 'Other'];
+  const categories = ['Nylon', 'Polycarbonate', 'TPU', 'Acetal', 'PET', 'PBT', 'ABS', 'Other'];
+
+  useEffect(() => {
+    getStats().then(setStats).catch(console.error);
+  }, []);
 
   const handleFetch = async (e) => {
     e.preventDefault();
+    const finalCompany = companySelect === 'Other' ? companyOther : companySelect;
+    const finalCategory = categorySelect === 'Other' ? categoryOther : categorySelect;
+    
+    if (!finalCompany.trim() || !finalCategory.trim()) {
+      alert("Please provide valid inputs");
+      return;
+    }
+
     try {
-      const res = await fetchDatasheets(company, category);
+      const res = await fetchDatasheets(finalCompany, finalCategory);
       setJobId(res.job_id);
     } catch (err) {
       console.error(err);
@@ -32,6 +49,7 @@ const FetchPanel = () => {
           setStatus(res);
           if (res.status !== 'running') {
             clearInterval(interval);
+            getStats().then(setStats).catch(console.error);
           }
         } catch (err) {
           console.error(err);
@@ -42,113 +60,168 @@ const FetchPanel = () => {
   }, [jobId]);
 
   return (
-    <div className="max-w-6xl mx-auto pt-6 flex flex-col h-full">
-      <div className="mb-10 text-center">
-        <h1 className="text-4xl font-bold tracking-tight mb-4">Initialize Data Retrieval</h1>
-        <p className="text-textMuted text-lg">Select manufacturer and material category to search for technical specifications.</p>
+    <div className="animate-fade-in flex flex-col space-y-16 pb-24">
+      {/* Metrics Band: Pure Minimalism */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 px-2">
+        <div className="px-6 py-6 border border-borderDark rounded-2xl bg-panel group hover:bg-white transition-all duration-500">
+           <p className="text-[10px] font-black tracking-widest text-textMuted uppercase mb-2 group-hover:text-black">SerpAPI Node</p>
+           <h3 className="text-3xl font-black text-black tracking-tighter">{stats.serpapi}</h3>
+        </div>
+        <div className="px-6 py-6 border border-borderDark rounded-2xl bg-panel group hover:bg-white transition-all duration-500">
+           <p className="text-[10px] font-black tracking-widest text-textMuted uppercase mb-2 group-hover:text-black">Google Index</p>
+           <h3 className="text-3xl font-black text-black tracking-tighter">{stats.google}</h3>
+        </div>
+        <div className="px-6 py-6 border border-borderDark rounded-2xl bg-panel group hover:bg-white transition-all duration-500">
+           <p className="text-[10px] font-black tracking-widest text-textMuted uppercase mb-2 group-hover:text-black">DDG Crawl</p>
+           <h3 className="text-3xl font-black text-black tracking-tighter">{stats.ddg}</h3>
+        </div>
+        <div className="px-6 py-6 border border-borderDark rounded-2xl bg-black flex flex-col justify-end group transition-all duration-500 hover:scale-[1.02] shadow-xl">
+           <p className="text-[10px] font-black tracking-widest text-white uppercase mb-2 opacity-60">System Health</p>
+           <h3 className="text-xl font-black text-white tracking-tighter">Nominal</h3>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-8 flex-1">
-        {/* LEFT WINDOW: Live Crawler Feed */}
-        <div className="lg:col-span-2 glass-panel p-6 flex flex-col h-[520px]">
-           <h2 className="text-xl font-bold mb-4 flex items-center space-x-2">
-             <span className="text-accent">⚡</span> <span>Live Crawler Feed</span>
-           </h2>
-           <div className="flex-1 bg-background/80 rounded-lg p-4 font-mono text-[11px] text-textMuted overflow-y-auto border border-borderDark/30 scrollbar-thin shadow-neumorph-inset relative">
-             {status && status.logs && status.logs.length > 0 ? status.logs.map((log, i) => (
-                <div key={i} className="mb-3 border-b border-borderDark/10 pb-2">
-                  <span className="text-accent/80 font-semibold tracking-wider">[{new Date(log.timestamp).toLocaleTimeString()}]</span> 
-                  <span className="text-textMain ml-2 font-semibold">{log.event.toUpperCase()}</span>
-                  {log.url && <div className="truncate text-xs text-textMuted mt-1 break-all whitespace-pre-wrap">↳ {log.url}</div>}
-                  {log.error && <div className="text-danger font-semibold mt-1">✗ {log.error}</div>}
-                </div>
-             )) : (
-                <div className="absolute inset-0 flex flex-col items-center justify-center opacity-40 space-y-4">
-                  <div className={`text-5xl text-accent ${jobId && status?.status === 'running' ? 'animate-pulse' : ''}`}>📡</div>
-                  <p className="text-sm uppercase tracking-widest font-sans font-semibold">
-                    {jobId && status?.status === 'running' ? 'Initializing Workers...' : 'Awaiting Fetch Protocol'}
-                  </p>
-                </div>
-             )}
-           </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-5 gap-16 items-start">
+        {/* Control Interface */}
+        <div className="lg:col-span-3 space-y-12">
+          <header className="space-y-4">
+             <h1 className="text-6xl font-black tracking-tighter text-black leading-tight">Elite Search <span className="text-borderDark/40">Protocol</span></h1>
+             <p className="text-xl text-textMuted font-medium max-w-xl leading-relaxed">Agentic material discovery engine supporting manufacturer Technical Data Sheet detection.</p>
+          </header>
 
-        {/* RIGHT WINDOW: Control Panel */}
-        <div className="lg:col-span-3 glass-panel p-10 relative overflow-hidden h-fit">
-          <div className="absolute top-[20%] right-[-10%] w-[50%] h-[50%] bg-accent/5 rounded-full blur-[80px]" />
-          
-          <form onSubmit={handleFetch} className="relative z-10 space-y-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-3">
-                <label className="text-sm font-semibold tracking-wide text-textMuted uppercase">Manufacturer</label>
-                <div className="relative">
+          <form onSubmit={handleFetch} className="space-y-10 group/form">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black tracking-[0.2em] text-black uppercase flex justify-between px-1">Target Manufacturer</label>
+                <div className="relative group">
                   <select 
-                    value={company} 
-                    onChange={(e) => setCompany(e.target.value)}
-                    className="neumorph-input w-full appearance-none cursor-pointer text-lg font-medium bg-background/50"
+                    value={companySelect} 
+                    onChange={(e) => {
+                      setCompanySelect(e.target.value);
+                      if(e.target.value !== 'Other') setCompanyOther('');
+                    }}
+                    className="enterprise-input w-full appearance-none appearance-none cursor-pointer border-2 group-hover:border-black transition-all"
                     disabled={jobId && status?.status === 'running'}
                   >
                     {companies.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-accent">▼</div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-black opacity-30 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
                 </div>
+                {companySelect === 'Other' && (
+                  <input 
+                    type="text"
+                    value={companyOther}
+                    onChange={e => setCompanyOther(e.target.value)}
+                    placeholder="ENTER CUSTOM MANUFACTURER..."
+                    className="enterprise-input w-full mt-2 uppercase tracking-widest text-xs border-2 border-black animate-fade-in"
+                    autoFocus
+                  />
+                )}
               </div>
 
-              <div className="space-y-3">
-                <label className="text-sm font-semibold tracking-wide text-textMuted uppercase">Material Category</label>
-                <div className="relative">
+              <div className="space-y-4">
+                <label className="text-[10px] font-black tracking-[0.2em] text-black uppercase flex justify-between px-1">Material Category</label>
+                <div className="relative group">
                   <select 
-                    value={category} 
-                    onChange={(e) => setCategory(e.target.value)}
-                    className="neumorph-input w-full appearance-none cursor-pointer text-lg font-medium bg-background/50"
+                    value={categorySelect} 
+                    onChange={(e) => {
+                      setCategorySelect(e.target.value);
+                      if(e.target.value !== 'Other') setCategoryOther('');
+                    }}
+                    className="enterprise-input w-full appearance-none cursor-pointer border-2 group-hover:border-black transition-all"
                     disabled={jobId && status?.status === 'running'}
                   >
                     {categories.map(c => <option key={c} value={c}>{c}</option>)}
                   </select>
-                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-accent">▼</div>
+                  <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-black opacity-30 group-hover:opacity-100 transition-opacity">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7"></path></svg>
+                  </div>
                 </div>
+                {categorySelect === 'Other' && (
+                  <input 
+                    type="text"
+                    value={categoryOther}
+                    onChange={e => setCategoryOther(e.target.value)}
+                    placeholder="ENTER CUSTOM MATERIAL..."
+                    className="enterprise-input w-full mt-2 uppercase tracking-widest text-xs border-2 border-black animate-fade-in"
+                    autoFocus
+                  />
+                )}
               </div>
             </div>
 
             <button 
               type="submit" 
-              className="neumorph-btn-accent w-full py-4 text-lg tracking-wider flex items-center justify-center space-x-3"
+              className="enterprise-btn-primary w-full py-5 text-xs font-black tracking-[.3em] uppercase flex items-center justify-center space-x-4 border-2 border-black"
               disabled={jobId && status?.status === 'running'}
             >
-              <span>{jobId && status?.status === 'running' ? 'Scanning Sources...' : 'Initiate Fetch Protocol'}</span>
+              <span>{jobId && status?.status === 'running' ? 'PROTOCOL DEPLOYED' : 'INITIALIZE PROTOCOL'}</span>
               {jobId && status?.status === 'running' && (
-                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
               )}
             </button>
           </form>
 
           {status && (
-            <div className="mt-8 pt-6 border-t border-borderDark/30">
-              <div className={`p-5 rounded-xl flex items-center justify-between ${status.status === 'running' ? 'bg-panel shadow-neumorph-inset' : 'glass-panel border-accent/30'}`}>
-                 <div className="flex items-center space-x-4">
-                   <div className={`w-12 h-12 rounded-full flex items-center justify-center ${status.status === 'running' ? 'bg-background' : 'bg-accent/20 text-accent text-xl'}`}>
-                     {status.status === 'running' ? '📡' : '✅'}
-                   </div>
-                   <div>
-                     <h3 className="text-lg font-medium">{status.status === 'running' ? 'Job in Progress' : 'Job Completed'}</h3>
-                     <p className="text-textMuted text-sm">Found: {status.total_found} candidates</p>
-                   </div>
-                 </div>
-                 
-                 {status.status !== 'running' && (
-                   <button 
-                     onClick={() => navigate(`/candidates?job_id=${jobId}`)}
-                     className="neumorph-btn px-6 py-2 border border-accent/20 text-accent hover:text-textMain hover:bg-accent hover:border-accent font-semibold tracking-wide shadow-neumorph"
-                   >
-                     Review Matches →
-                   </button>
-                 )}
-              </div>
+            <div className="pt-12 border-t border-borderDark animate-fade-in overflow-hidden">
+               <div className={`p-8 rounded-2xl border-2 flex items-center justify-between group transition-all duration-500 ${status.status === 'running' ? 'bg-panel border-borderDark' : 'bg-success/5 border-success/30'}`}>
+                  <div className="flex items-center space-x-8">
+                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all ${status.status === 'running' ? 'bg-black text-white shadow-lg' : 'bg-success text-white'}`}>
+                      {status.status === 'running' ? (
+                        <svg className="w-6 h-6 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
+                      ) : (
+                        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="text-xl font-black text-black tracking-tight">{status.status === 'running' ? 'Agent Node Busy' : 'Extraction Verified'}</h3>
+                      <p className="text-textMuted text-[10px] font-bold uppercase tracking-widest mt-1">Discovered: {status.total_found} • Confidence Maxed</p>
+                    </div>
+                  </div>
+                  
+                  {status.status !== 'running' && (
+                    <button 
+                      onClick={() => navigate(`/candidates?job_id=${jobId}`)}
+                      className="enterprise-btn-primary text-[10px] py-3 tracking-widest font-black"
+                    >
+                      REVIEW OUTPUT →
+                    </button>
+                  )}
+               </div>
             </div>
           )}
+        </div>
+
+        {/* Console / Crawler matrix */}
+        <div className="lg:col-span-2 space-y-6">
+           <div className="flex items-center justify-between px-4">
+              <span className="text-[10px] font-black tracking-widest text-textMuted uppercase flex items-center space-x-3">
+                 <div className="w-2 h-2 rounded-full bg-black animate-pulse" />
+                 <span>Crawler Live Stream</span>
+              </span>
+              <span className="text-[9px] font-bold text-textMuted uppercase opacity-40">Matrix V1</span>
+           </div>
+           <div className="bg-panel border border-borderDark rounded-3xl p-8 h-[600px] flex flex-col shadow-inner relative overflow-hidden group hover:shadow-enterprise transition-all border-2">
+             <div className="flex-1 overflow-y-auto font-mono text-[10px] text-textMuted leading-loose flex flex-col-reverse scrollbar-none">
+               {status && status.logs && status.logs.length > 0 ? [...status.logs].reverse().map((log, i) => (
+                  <div key={i} className="mb-6 animate-fade-in group/log">
+                    <div className="flex items-center justify-between border-b border-borderDark/20 pb-2 mb-2">
+                      <span className="text-black font-black uppercase tracking-widest text-[9px] opacity-40 group-hover/log:opacity-100 transition-all">{log.event}</span>
+                      <span className="text-[9px] font-bold opacity-30 group-hover/log:opacity-100 transition-all">@{new Date(log.timestamp).toLocaleTimeString()}</span>
+                    </div>
+                    {log.url && <div className="text-[9px] text-textMuted truncate opacity-60 group-hover/log:opacity-100 transition-all font-medium py-1">→ {log.url}</div>}
+                    {log.error && <div className="text-danger font-bold mt-2 bg-danger/5 px-3 py-2 border border-danger/10 rounded-md">FAILURE_SIGNAL: {log.error}</div>}
+                  </div>
+               )) : (
+                  <div className="flex-1 flex flex-col items-center justify-center opacity-10 space-y-12 select-none">
+                    <div className="w-32 h-32 border-8 border-black rounded-full opacity-20 border-t-transparent animate-spin-slow" />
+                    <p className="text-5xl font-black tracking-tighter text-black">AWAITING_INPUT</p>
+                  </div>
+               )}
+             </div>
+           </div>
         </div>
       </div>
     </div>

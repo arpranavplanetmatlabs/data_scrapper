@@ -9,6 +9,28 @@ from utils.logger import get_logger
 
 logger = get_logger("scraper.search")
 
+import os
+import json
+
+STATS_FILE = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "stats.json")
+
+def increment_stat(engine: str):
+    """Safely increment the search counter for a given engine in the telemetry file."""
+    os.makedirs(os.path.dirname(STATS_FILE), exist_ok=True)
+    stats = {"google": 0, "ddg": 0, "serpapi": 0}
+    if os.path.exists(STATS_FILE):
+        try:
+            with open(STATS_FILE, "r") as f:
+                stats.update(json.load(f))
+        except Exception:
+            pass
+    stats[engine] += 1
+    try:
+        with open(STATS_FILE, "w") as f:
+            json.dump(stats, f)
+    except Exception:
+        pass
+
 TDS_QUERY_TEMPLATES = [
     '{company} {material} technical data sheet filetype:pdf',
     '{company} {material} TDS pdf download',
@@ -70,6 +92,7 @@ def search_ddg_html(query: str) -> List[str]:
         return []
 
 def search_google(query: str) -> List[str]:
+    increment_stat("google")
     from googlesearch import search as gsearch
     try:
         results = list(gsearch(query, num_results=settings.SEARCH_RESULTS_LIMIT, sleep_interval=1))
@@ -97,6 +120,7 @@ def search_serpapi(query: str) -> List[str]:
         for r in results.get("organic_results", []):
             if "link" in r:
                 urls.append(r["link"])
+        increment_stat("serpapi")
         logger.info(f"SerpAPI search '{query}' -> {len(urls)} results")
         return urls
     except Exception as e:

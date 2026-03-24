@@ -29,6 +29,9 @@ export const rejectCandidate = (candidateId) =>
 export const getMaterials = () => 
   api.get('/materials').then(res => res.data);
 
+export const getStats = () =>
+  api.get('/stats').then(res => res.data);
+
 export const getDownloadUrl = (materialId) => 
   `${API_BASE_URL}/download/${materialId}`;
 
