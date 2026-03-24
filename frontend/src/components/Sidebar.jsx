@@ -4,15 +4,21 @@ const Sidebar = () => {
   const location = useLocation();
 
   const navLinks = [
-    { path: '/', label: 'Fetch Protocol', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-    ) },
-    { path: '/candidates', label: 'Review Registry', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
-    ) },
-    { path: '/materials', label: 'Archive Vault', icon: (
-      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
-    ) },
+    {
+      path: '/', label: 'Fetch Protocol', icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+      )
+    },
+    {
+      path: '/candidates', label: 'Review Registry', icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" /></svg>
+      )
+    },
+    {
+      path: '/materials', label: 'Archive Vault', icon: (
+        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" /></svg>
+      )
+    },
   ];
 
   return (
@@ -23,7 +29,7 @@ const Sidebar = () => {
           <div className="w-4 h-4 border-2 border-white rounded-sm rotate-45 transform" />
         </div>
         <div>
-          <h1 className="text-sm font-black tracking-[.25em] text-black uppercase leading-none">Material</h1>
+          <h1 className="text-[10px] font-bold tracking-[.25em] text-textMuted uppercase mt-1">Material</h1>
           <h2 className="text-[10px] font-bold tracking-[.15em] text-textMuted uppercase mt-1">Intelligence</h2>
         </div>
       </div>
@@ -32,20 +38,19 @@ const Sidebar = () => {
         <div className="px-4 mb-4 text-[9px] font-black tracking-[.3em] text-textMuted uppercase">System Modules</div>
         {navLinks.map((link) => {
           const isActive = location.pathname === link.path || (link.path === '/' && location.pathname === '/fetch');
-          
+
           return (
             <Link
               key={link.path}
               to={link.path}
-              className={`flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 group relative ${
-                isActive 
-                ? 'bg-black text-white font-bold translate-x-1 shadow-enterprise' 
-                : 'text-textMuted hover:text-black hover:bg-panelHover hover:translate-x-1 font-semibold'
-              }`}
+              className={`flex items-center px-4 py-3.5 rounded-xl transition-all duration-300 group relative ${isActive
+                  ? 'bg-black text-white font-bold translate-x-1 shadow-enterprise'
+                  : 'text-textMuted hover:text-black hover:bg-panelHover hover:translate-x-1 font-semibold'
+                }`}
             >
               <div className={`mr-4 transition-all duration-300 ${isActive ? 'scale-110' : 'opacity-60 group-hover:opacity-100 group-hover:scale-110'}`}>{link.icon}</div>
               <span className="tracking-widest text-[11px] uppercase">{link.label}</span>
-              
+
               {isActive && (
                 <div className="ml-auto w-1 h-1 bg-white rounded-full animate-pulse" />
               )}
@@ -53,7 +58,7 @@ const Sidebar = () => {
           );
         })}
       </nav>
-      
+
       <div className="p-10">
         <div className="bg-white border border-borderDark rounded-2xl p-6 flex flex-col space-y-4 shadow-enterprise hover:shadow-enterprise-lg transition-all cursor-default">
           <div className="flex items-center justify-between">

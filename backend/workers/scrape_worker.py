@@ -10,7 +10,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import create_engine
 
 from config import settings
-from models.schemas import ScrapeJob, Candidate, JobStatus, CandidateStatus
+from models.schemas import ScrapeJob, Candidate, Material, JobStatus, CandidateStatus
 from scraper.search import run_search
 from scraper.fetcher import fetch_page
 from scraper.extractor import extract_pdf_candidates
@@ -47,12 +47,16 @@ def run_scrape_job(job_id: int, company: str, material_category: str):
     logger.info(f"[Job {job_id}] Starting scrape: company={company}, category={material_category}")
 
     try:
-        # ── Phase 1: Search ──────────────────────────────────────────────────
+        # ── Phase 1: Search (Multi-Engine Discovery) ────────────────────────
         job.add_log(make_log_entry("search_start", company=company, material=material_category))
         db.commit()
 
-        urls = run_search(company, material_category)
-        job.add_log(make_log_entry("search_done", total_urls=len(urls), urls=urls[:10]))
+        def _log_search(event: str, **kwargs):
+            job.add_log(make_log_entry(event, **kwargs))
+            db.commit()
+
+        urls = run_search(company, material_category, log_callback=_log_search)
+        job.add_log(make_log_entry("search_done", total_urls=len(urls)))
         db.commit()
 
         total_found = 0
@@ -75,15 +79,13 @@ def run_scrape_job(job_id: int, company: str, material_category: str):
                     db.commit()
                     continue
 
-                # ── Insert candidates into DB ────────────────────────────────
+                # ── Insert candidates into DB (Global Duplicate Check) ────────
                 for cdata in candidates_data:
-                    # Skip if this pdf_url is already a candidate for this job
-                    existing = (
-                        db.query(Candidate)
-                        .filter_by(job_id=job_id, pdf_url=cdata["pdf_url"])
-                        .first()
-                    )
-                    if existing:
+                    # Check if this PDF URL was ever seen before (as a candidate or material)
+                    exists_in_candidates = db.query(Candidate).filter_by(pdf_url=cdata["pdf_url"]).first()
+                    exists_in_materials = db.query(Material).filter_by(source_url=cdata["pdf_url"]).first()
+                    
+                    if exists_in_candidates or exists_in_materials:
                         continue
 
                     candidate = Candidate(

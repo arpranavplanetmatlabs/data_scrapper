@@ -1,92 +1,53 @@
-# Material TDS Retrieval Platform
+# Material Intelligence | Elite TDS Retrieval Platform
 
-A high-performance, asynchronous web scraper and presentation dashboard built to discover, validate, and download Technical Data Sheets (TDS) and material specifications from manufacturers.
+A production-grade, MNC-elite Technical Data Sheet (TDS) discovery engine. Built for high-contrast, manual visual inspection and global discovery of material science documentation.
 
-This project is divided into two distinct services:
-1. **Backend:** A robust Python/FastAPI async scraping engine.
-2. **Frontend:** A modern, Vite/React presentation dashboard using Tailwind CSS.
+## 💎 Elite Features
 
----
+- **Swiss-Inspired Monochrome UI**: A high-contrast Black & White design system (Zinc palette) optimized for professional concentration.
+- **Weighted Momentum Scrolling**: Integrated hardware-accelerated Lenis scrolling for a "creamy," premium navigational feel.
+- **Multi-Engine Aggregation**: Orchestrates discovery across **SerpAPI**, **Google Index**, and **DuckDuckGo** crawl signals to maximize market coverage.
+- **Global Discovery Guard**: Sophisticated duplicate detection that ensures a PDF URL is only ever presented for review once, globally across all sessions.
+- **Manual Elite Workflow**: Optimised for visual inspection. The system stores verified archives but delegates file management to manual user download for visual integrity.
+- **Intelligent Playwright Automation**: Automatic failover to headless browser automation when search engines employ bot-detection.
 
-## Architecture Overview
+## 🛠 Technology Stack
 
-*   **Search Engine Integration:** Supports custom DuckDuckGo HTML parsing, `googlesearch-python` fallbacks, and resilient proxy-routing via `SerpAPI`.
-*   **Intelligent Fetching:** Uses asynchronous `httpx` to download HTML. If a page is JavaScript-heavy or protected against basic bots, it falls back seamlessly to a headless `Playwright` browser running in a background thread to render the DOM.
-*   **Confidence Scoring:** Extracts PDF links and evaluates them using textual, context, domain matching, and penalty (SDS) signals to rate the candidate document out of 100%.
-*   **Deduplication:** Downloads are cryptographically hashed by URL to prevent saving duplicate PDFs over multiple runs.
-*   **Asynchronous Workers:** Scraping logic is dispatched to background threads so the FastAPI server remains blazing fast and unblocked.
+- **Backend**: FastAPI (Asynchronous Python 3.10+)
+- **Frontend**: React + Vite + TailwindCSS 3.4
+- **Database**: SQLModel (SQLite with AsyncIO)
+- **Scraping**: SerpAPI, playwright, httpx, BeautifulSoup4
+- **Animations**: Lenis (Smooth scroll), Framer Motion-inspired CSS architecture.
 
----
+## 🚀 Rapid Deployment
 
-## 🚀 1. Backend Setup (FastAPI)
+### 1. Prerequisites
+- Python 3.10+
+- Node.js 18+
+- [SerpAPI Key](https://serpapi.com/) (Optional but recommended)
 
-### Prerequisites
-*   Python 3.10+
-*   Virtual Environment (Optional but recommended)
-
-### Installation
-1. Navigate to the backend directory:
-   ```bash
-   cd e:/data_scraper/backend
-   ```
-2. Install the required Python dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
-3. Install headless browsers for the Playwright fallback engine:
-   ```bash
-   playwright install
-   ```
-
-### Configuration
-1. Create a `.env` file in the `backend/` directory by copying `.env.example`:
-   ```bash
-   cp .env.example .env
-   ```
-2. Update the `.env` configuration:
-   ```ini
-   # Required if you want to bypass standard search engine IP blocks completely
-   SEARCH_PROVIDER=serpapi
-   SERPAPI_KEY=your_active_serpapi_key_here
-   ```
-
-### Running the Server
-Start the backend using uvicorn with live-reload enabled:
+### 2. Backend Setup
 ```bash
+cd backend
+python -m venv venv
+source venv/bin/activate  # Or `venv\Scripts\activate` on Windows
+pip install -r requirements.txt
+# Create a .env file with your SERPAPI_KEY
 python -m uvicorn main:app --reload --port 8000
 ```
-*The API will be available at `http://localhost:8000`.*
-*Swagger UI docs available at `http://localhost:8000/docs`.*
 
----
-
-## ⚡ 2. Frontend Setup (React/Vite)
-
-### Prerequisites
-*   Node.js (v18+)
-
-### Installation
-1. Navigate to the frontend directory:
-   ```bash
-   cd e:/data_scraper/frontend
-   ```
-2. Install Node modules:
-   ```bash
-   npm install
-   ```
-
-### Running the Application
-Start the Vite developer server:
+### 3. Frontend Setup
 ```bash
+cd frontend
+npm install
 npm run dev
 ```
-*The Dashboard will be accessible via browser at `http://localhost:5173/`.*
+
+## 🛡️ Manual Verification Workflow
+1. **Discovery**: Enter a manufacturer and material category. The system aggregates unique signals from 3 search engines.
+2. **Nomenclature Registry**: Visually inspect the discovered candidates. The engine calculates "Discovery Clarity" scores (80-95%) for each file.
+3. **Archive Pulse**: Click the checkmark to archive the item. No files are downloaded to the server—only the verified coordinates and direct links are stored.
+4. **Manual Extraction**: Access the "Archive Vault" to download the verified TDS documents directly from the source.
 
 ---
-
-## Feature Roadmap
-- [x] Initial full-stack implementation and candidate extraction pipeline.
-- [x] Background ThreadPoolExecutor integration and API endpoints.
-- [x] SerpAPI resilient routing integration fallback.
-- [ ] Implement Search Engine Telemetry / Statistics polling functionality.
-- [ ] Executive MNC-grade UX/UI aesthetic pipeline redesign.
+*Developed for elite material researchers and enterprise procurement teams.*

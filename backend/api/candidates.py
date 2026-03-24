@@ -39,8 +39,8 @@ async def list_candidates(
 @router.post("/candidates/{candidate_id}/accept", response_model=CandidateActionResponse, tags=["Candidates"])
 async def accept_candidate(candidate_id: int, db: AsyncSession = Depends(get_db)):
     """
-    Accept a candidate: download its PDF and store as a Material.
-    Runs the download in a thread executor to avoid blocking the event loop.
+    Accept a candidate: visual verification completed.
+    Marks it as accepted and creates a Material record without server-side download.
     """
     result = await db.execute(select(Candidate).where(Candidate.id == candidate_id))
     candidate: Candidate = result.scalar_one_or_none()
@@ -48,36 +48,18 @@ async def accept_candidate(candidate_id: int, db: AsyncSession = Depends(get_db)
         raise HTTPException(status_code=404, detail="Candidate not found")
 
     if candidate.status in (CandidateStatus.accepted, CandidateStatus.downloaded):
-        return CandidateActionResponse(id=candidate_id, status=candidate.status, message="Already accepted")
+        return CandidateActionResponse(id=candidate_id, status=candidate.status, message="Already in archive")
 
-    # Download PDF in thread (blocking I/O)
-    from scraper.downloader import download_pdf
-    loop = asyncio.get_event_loop()
-    pdf_path = await loop.run_in_executor(
-        None,
-        download_pdf,
-        candidate.pdf_url,
-        candidate.company,
-        candidate.material_category,
-        candidate.product_name or "",
-    )
-
-    if not pdf_path:
-        # Mark as accepted even if duplicate (already on disk)
-        candidate.status = CandidateStatus.accepted
-        await db.commit()
-        return CandidateActionResponse(id=candidate_id, status="accepted", message="PDF already exists on disk")
-
-    # Create Material record
+    # Create Material record pointing to original PDF URL
     material = Material(
         product_name=candidate.product_name,
         company=candidate.company,
         material_category=candidate.material_category,
-        pdf_path=pdf_path,
-        source_url=candidate.source_url,
+        pdf_path="",  # No local file stored
+        source_url=candidate.pdf_url, # Direct URL for manual download
     )
     db.add(material)
-    candidate.status = CandidateStatus.downloaded
+    candidate.status = CandidateStatus.accepted
 
     # Update job accepted count
     job_result = await db.execute(select(ScrapeJob).where(ScrapeJob.id == candidate.job_id))
@@ -86,7 +68,7 @@ async def accept_candidate(candidate_id: int, db: AsyncSession = Depends(get_db)
         job.total_accepted = (job.total_accepted or 0) + 1
 
     await db.commit()
-    return CandidateActionResponse(id=candidate_id, status="downloaded", message=f"PDF saved: {pdf_path}")
+    return CandidateActionResponse(id=candidate_id, status="accepted", message="Archive verified")
 
 
 @router.post("/candidates/{candidate_id}/reject", response_model=CandidateActionResponse, tags=["Candidates"])

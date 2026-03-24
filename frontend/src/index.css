@@ -6,6 +6,7 @@
   body {
     @apply bg-white text-black min-h-screen font-sans antialiased selection:bg-black selection:text-white leading-relaxed;
     font-feature-settings: "cv02", "cv05", "cv11";
+    background-size: 32px 32px;
   }
 }
 

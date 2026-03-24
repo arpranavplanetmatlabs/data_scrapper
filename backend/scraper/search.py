@@ -136,38 +136,53 @@ def search_mock(query: str) -> List[str]:
         "https://www.matweb.com/search/DataSheet.aspx?MatGUID=123456" # just a link to test parsing
     ]
 
-def run_search(company: str, material_category: str) -> List[str]:
+def run_search(company: str, material_category: str, log_callback=None) -> List[str]:
+    """
+    Execute search across multiple providers (SerpAPI, DDG, Google) and aggregate results.
+    Includes polite rate-limiting to ensure sustainable discovery.
+    """
     queries = build_queries(company, material_category)
     all_urls: List[str] = []
     seen = set()
 
     for query in queries:
-        urls = []
-        if settings.SEARCH_PROVIDER == "serpapi":
-            urls = search_serpapi(query)
-            
-        # Fallback to custom DDG HTML scraper
-        if not urls:
-            urls = search_ddg_html(query)
-            time.sleep(2)  # polite delay
+        # ── Step 1: SerpAPI (Primary) ────────────────────────────────────────
+        if settings.SERPAPI_KEY:
+            if log_callback: log_callback("serpapi_search", query=query)
+            serp_urls = search_serpapi(query)
+            for u in serp_urls:
+                if u not in seen:
+                    seen.add(u)
+                    all_urls.append(u)
+            time.sleep(1.5) # Slight pause
 
-        # Fallback to Google if DDG failed or returned 0
-        if not urls:
-            urls = search_google(query)
-            time.sleep(2)
-            
-        # Final fallback to Mock to ensure we ALWAYS have test data
-        if not urls:
-            urls = search_mock(query)
+        # ── Step 2: DuckDuckGo HTML (Fallback) ───────────────────────────────
+        if log_callback: log_callback("ddg_crawl", query=query)
+        ddg_urls = search_ddg_html(query)
+        for u in ddg_urls:
+            if u not in seen:
+                seen.add(u)
+                all_urls.append(u)
+        time.sleep(3.0) # Polite rate limit for scraping
 
-        for url in urls:
-            url_str = str(url)
-            if url_str not in seen:
-                seen.add(url_str)
-                all_urls.append(url_str)
+        # ── Step 3: Google (Fallback) ────────────────────────────────────────
+        if len(all_urls) < settings.MAX_PAGES_PER_JOB:
+            if log_callback: log_callback("google_index_search", query=query)
+            google_urls = search_google(query)
+            for u in google_urls:
+                if u not in seen:
+                    seen.add(u)
+                    all_urls.append(u)
+            time.sleep(4.0) # Heavily rate-limit Google to avoid sorry-page
 
+        # Break early if we've reached the system saturation point
         if len(all_urls) >= settings.MAX_PAGES_PER_JOB:
             break
 
-    logger.info(f"Total unique URLs found: {len(all_urls)}")
+    # Final fallback if all real engines returned absolutely nothing
+    if not all_urls:
+        logger.warning("All search engines returned zero results. Using mock fallback.")
+        all_urls = search_mock(f"{company} {material_category}")
+
+    logger.info(f"Discovery aggregation complete. Total unique URLs: {len(all_urls)}")
     return all_urls[:settings.MAX_PAGES_PER_JOB]
