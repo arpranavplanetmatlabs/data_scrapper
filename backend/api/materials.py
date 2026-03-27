@@ -5,19 +5,39 @@ GET /materials        → list all accepted/downloaded materials
 GET /download/{id}    → serve PDF file as download
 """
 import os
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from fastapi.responses import FileResponse
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from models.database import get_db
+from models.database import get_db, get_sync_db
 from models.schemas import Material
-from models.pydantic_models import MaterialResponse
+from models.pydantic_models import MaterialResponse, BulkDownloadRequest, BulkDownloadResponse
+from services.bulk_downloader import bulk_downloader
 
 router = APIRouter()
 
 
-@router.get("/materials", response_model=list[MaterialResponse], tags=["Materials"])
+@router.post("/bulk-download", response_model=BulkDownloadResponse, tags=["Materials"])
+async def trigger_bulk_download(request: BulkDownloadRequest, background_tasks: BackgroundTasks):
+    """
+    Trigger a background task to download multiple materials into organized folders.
+    """
+    def _run_sync():
+        db_sync = get_sync_db()
+        try:
+            bulk_downloader.run_bulk_download(db_sync, request.material_ids)
+        finally:
+            db_sync.close()
+
+    background_tasks.add_task(_run_sync)
+    
+    return BulkDownloadResponse(
+        total_requested=len(request.material_ids)
+    )
+
+
+@router.get("/", response_model=list[MaterialResponse], tags=["Materials"])
 async def list_materials(db: AsyncSession = Depends(get_db)):
     """Return all downloaded material TDS PDFs."""
     result = await db.execute(select(Material).order_by(Material.created_at.desc()))

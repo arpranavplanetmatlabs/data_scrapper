@@ -62,39 +62,45 @@ def run_scrape_job(job_id: int, company: str, material_category: str):
         total_found = 0
         visited = 0
 
-        # ── Phase 2: Fetch + Extract ─────────────────────────────────────────
+        # ── Phase 2: Fetch + Deep Extract (Crawl4AI) ──────────────────────────
+        import asyncio
+        from scraper.crawl_service import crawl_service
+
         for url in urls:
             if visited >= settings.MAX_PAGES_PER_JOB:
                 break
             visited += 1
 
             try:
-                html, method = fetch_page(url)
-                job.add_log(make_log_entry("page_fetched", url=url, method=method))
+                job.add_log(make_log_entry("page_deep_crawl", url=url))
+                db.commit()
 
-                candidates_data = extract_pdf_candidates(html, url, company, material_category)
+                # Deep Discovery via Crawl4AI (Async call in sync thread)
+                candidates_list = asyncio.run(crawl_service.crawl_and_extract_pdfs(url))
 
-                if not candidates_data:
-                    job.add_log(make_log_entry("no_pdfs", url=url))
+                if not candidates_list:
+                    job.add_log(make_log_entry("no_discovery", url=url))
                     db.commit()
                     continue
 
                 # ── Insert candidates into DB (Global Duplicate Check) ────────
-                for cdata in candidates_data:
+                for cdata in candidates_list:
+                    pdf_url = cdata["url"]
+                    
                     # Check if this PDF URL was ever seen before (as a candidate or material)
-                    exists_in_candidates = db.query(Candidate).filter_by(pdf_url=cdata["pdf_url"]).first()
-                    exists_in_materials = db.query(Material).filter_by(source_url=cdata["pdf_url"]).first()
+                    exists_in_candidates = db.query(Candidate).filter_by(pdf_url=pdf_url).first()
+                    exists_in_materials = db.query(Material).filter_by(source_url=pdf_url).first()
                     
                     if exists_in_candidates or exists_in_materials:
                         continue
 
                     candidate = Candidate(
                         job_id=job_id,
-                        product_name=cdata["product_name"],
+                        product_name=cdata["text"],
                         company=company,
                         material_category=material_category,
-                        pdf_url=cdata["pdf_url"],
-                        source_url=cdata["source_url"],
+                        pdf_url=pdf_url,
+                        source_url=url, # Original candidate page
                         confidence_score=cdata["confidence_score"],
                         status=CandidateStatus.discovered,
                     )
@@ -102,12 +108,11 @@ def run_scrape_job(job_id: int, company: str, material_category: str):
                     total_found += 1
                     job.add_log(make_log_entry(
                         "candidate_added",
-                        pdf_url=cdata["pdf_url"],
+                        pdf_url=pdf_url,
                         score=cdata["confidence_score"],
-                        product=cdata["product_name"],
+                        product=cdata["text"],
                     ))
-
-                job.total_found = total_found
+                
                 db.commit()
 
             except Exception as page_err:

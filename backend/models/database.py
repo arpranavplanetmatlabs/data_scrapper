@@ -18,6 +18,19 @@ AsyncSessionLocal = async_sessionmaker(
 )
 
 
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker, Session
+
+# Sync engine for background workers
+sync_engine = create_engine(
+    settings.DATABASE_URL.replace("sqlite+aiosqlite", "sqlite"),
+    connect_args={"check_same_thread": False},
+)
+SessionLocalSync = sessionmaker(bind=sync_engine, expire_on_commit=False)
+
+def get_sync_db() -> Session:
+    return SessionLocalSync()
+
 class Base(DeclarativeBase):
     pass
 

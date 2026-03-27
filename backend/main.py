@@ -47,7 +47,7 @@ app.add_middleware(
 app.include_router(fetch_router)
 app.include_router(jobs_router)
 app.include_router(candidates_router)
-app.include_router(materials_router)
+app.include_router(materials_router, prefix="/materials")
 app.include_router(stats_router)
 
 

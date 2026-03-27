@@ -70,3 +70,9 @@ class MaterialResponse(BaseModel):
 
     class Config:
         from_attributes = True
+class BulkDownloadRequest(BaseModel):
+    material_ids: List[int]
+
+class BulkDownloadResponse(BaseModel):
+    message: str = "Bulk download started in background"
+    total_requested: int
